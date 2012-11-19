@@ -1,0 +1,37 @@
+--- a/persistent.rb        2012-08-17 15:02:50.000000000 +0900
++++ b/persistent.rb     2012-08-17 15:01:17.000000000 +0900
+@@ -163,6 +163,11 @@
+                  else raise ArgumentError, 'proxy must be :ENV or a URI::HTTP'
+                  end
+
++    @no_proxy = []
++    if proxy == :ENV
++      @no_proxy = (ENV['NO_PROXY'] || ENV['no_proxy'] || 'localhost, 127.0.0.1').split(/\s*,\s*/)
++    end
++
+     if @proxy_uri then
+       @proxy_args = [
+         @proxy_uri.host,
+@@ -205,7 +210,7 @@
+     net_http_args = [uri.host, uri.port]
+     connection_id = net_http_args.join ':'
+
+-    if @proxy_uri then
++    if @proxy_uri && out_of_noproxy?(uri) then
+       connection_id << @proxy_connection_id
+       net_http_args.concat @proxy_args
+     end
+@@ -231,6 +236,13 @@
+     raise Error, "host down: #{connection.address}:#{connection.port}"
+   end
+
++  def out_of_noproxy?(uri)
++    @no_proxy.each do |host_addr|
++      return false if uri.host.match(Regexp.quote(host_addr) + '$')
++    end
++    return true
++  end
++
+   ##
+   # Returns an error message containing the number of requests performed on
+   # this connection

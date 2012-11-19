@@ -1,0 +1,29 @@
+--- a/remote_fetcher.rb	2011-07-20 00:28:13.000000000 +0900
++++ b/remote_fetcher.rb	2011-07-20 01:09:59.000000000 +0900
+@@ -69,6 +69,7 @@
+       when URI::HTTP then proxy
+       else URI.parse(proxy)
+       end
++    @no_proxy = (ENV['NO_PROXY'] || ENV['no_proxy'] || 'localhost, 127.0.0.1').split(/\s*,\s*/)
+     @user_agent = user_agent
+   end
+ 
+@@ -296,10 +297,17 @@
+   # Creates or an HTTP connection based on +uri+, or retrieves an existing
+   # connection, using a proxy if needed.
+ 
++  def out_of_no_proxy?(uri)
++    @no_proxy.each do |host_addr|
++      return false if uri.host.match(Regexp.quote(host_addr) + '$')
++    end
++    return true
++  end
++
+   def connection_for(uri)
+     net_http_args = [uri.host, uri.port]
+ 
+-    if @proxy_uri then
++    if @proxy_uri and out_of_no_proxy?(uri) then
+       net_http_args += [
+         @proxy_uri.host,
+         @proxy_uri.port,

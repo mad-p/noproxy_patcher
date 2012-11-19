@@ -1,0 +1,59 @@
+#!/usr/bin/env ruby
+require 'optparse'
+
+$dry_run = nil
+$verbose = true
+OptionParser.new('noproxy_patcher') do |opt|
+  opt.on('-n', '--dry_run') {|v| $dry_run = v }
+  opt.on('-q', '--quiet')   {|v| $verbose = !v }
+
+  opt.parse!(ARGV)
+end
+$verbose ||= $dry_run
+
+def find_files_to_patch(patch)
+  orig_name = File.basename(patch.sub(/\.diff/, ''))
+  # find files to patch
+  files = `find ~/.rvm -name #{orig_name} -print0`.split("\0")
+  files.reject! do |file|
+    case file
+    when %r[/src/]
+      true
+    when %r[/selenium-webdriver]
+      true
+    else
+      /NO_PROXY/ =~ File.open(file, 'r') {|f| f.read}
+    end
+  end
+  files
+end
+
+def main
+  patches = Dir.glob(File.dirname(__FILE__) + "/*.diff")
+  jobs = Hash[patches.map {|p| [p, find_files_to_patch(p)]}]
+  count = jobs.keys.map {|p| jobs[p].size}.reduce(&:+)
+
+  if count == 0
+    $verbose and puts "Nothing to work."
+    exit 0
+  end
+
+  if $verbose
+    puts "Following files to patch:"
+    jobs.each_pair do |p, f|
+      f.size == 0 and next
+      puts "  #{File.basename(p)}:"
+      f.each {|file| puts "    #{file}" }
+    end
+  end
+
+  jobs.each_pair do |patch, f|
+    f.each do |file|
+      command = "patch -N -p1 -u #{$dry_run ? '--dry-run' : ''} -b '#{file}' '#{patch}'"
+      $verbose and puts command
+      system(command)
+    end
+  end
+end
+
+main if caller.empty?
