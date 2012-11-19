@@ -6,7 +6,7 @@ Apply monkey patch to rubygems and bundler so that they respect NO_PROXY environ
 
     noproxy_patcher [-n] [-q]
 
-noproxy_patcher applies NO_PROXY patches rubygems and bundler that resides under your ~/.rvm.
+noproxy_patcher applies NO_PROXY patches to rubygems and bundler that resides under your ~/.rvm.
 
 ## See Also
 
