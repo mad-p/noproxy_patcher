@@ -14,7 +14,8 @@ $verbose ||= $dry_run
 def find_files_to_patch(patch)
   orig_name = File.basename(patch.sub(/\.diff/, ''))
   # find files to patch
-  files = `find ~/.rvm -name #{orig_name} -print0`.split("\0")
+  base_dir = ENV["rvm_path"] || File.expand_path('.rvm', ENV["HOME"])
+  files = `find #{base_dir} -name #{orig_name} -print0`.split("\0")
   files.reject! do |file|
     case file
     when %r[/src/]
